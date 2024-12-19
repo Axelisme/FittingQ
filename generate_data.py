@@ -9,8 +9,8 @@ from scqubits import Fluxonium  # type: ignore
 from tqdm.auto import trange
 
 # parameters
-data_path = "data/train.h5"
-data_num = 3000
+data_path = "data/dev.h5"
+data_num = 300
 EJb = (4.0, 6.0)
 ECb = (0.5, 1.0)
 ELb = (1.0, 2.0)

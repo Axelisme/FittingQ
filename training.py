@@ -1,3 +1,6 @@
+import os
+
+import numpy as np
 import torch
 from torch.nn import MSELoss
 from torch.optim import AdamW
@@ -5,6 +8,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 
+from modules.baseblock import ResNet18  # noqa: F401
 from modules.dataset import SpectrumDataset
 from modules.model import PredictNet
 
@@ -12,9 +16,13 @@ from modules.model import PredictNet
 train_filepath = "data/train.h5"
 dev_filepath = "data/dev.h5"
 
-batch_size = 32
+batch_size = 128
 lr = 1e-3
 epochs = 50
+
+# set random seed
+torch.manual_seed(0)
+np.random.seed(0)
 
 # load dataset
 train_dataset = SpectrumDataset(train_filepath)
@@ -23,7 +31,8 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 dev_loader = DataLoader(dev_dataset, batch_size=batch_size)
 
 # load model
-model = PredictNet()
+save_path = "ckpt/resnet18.pth"
+model = PredictNet(ResNet18)
 
 # loss function and optimizer
 criterion = MSELoss()
@@ -35,7 +44,7 @@ model.cuda()
 criterion.cuda()
 
 # training
-save_path = "best_model.pth"
+os.makedirs(os.path.dirname(save_path), exist_ok=True)
 best_loss = float("inf")
 for epoch in trange(epochs, desc="Epoch"):
     model.train()
@@ -62,3 +71,6 @@ for epoch in trange(epochs, desc="Epoch"):
     if dev_loss < best_loss:
         best_loss = dev_loss
         torch.save(model.state_dict(), save_path)
+
+# save the final model
+torch.save(model.state_dict(), "ckpt/last.pth")
