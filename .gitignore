@@ -1,0 +1,6 @@
+data
+*.pth
+test.py
+__pycache__
+*.h5
+*.hdf5
