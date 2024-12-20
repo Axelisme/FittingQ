@@ -31,7 +31,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 dev_loader = DataLoader(dev_dataset, batch_size=batch_size)
 
 # load model
-save_path = "ckpt/resnet18.pth"
+save_path = "ckpt/resnet18_f3.pth"
 model = PredictNet(ResNet18)
 
 # loss function and optimizer

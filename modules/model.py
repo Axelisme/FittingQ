@@ -46,7 +46,8 @@ class PredictNet(torch.nn.Module):
         fpts = self.fpts[None, None, :]  # (1, 1, h)
         avg = (fpts * spectrum).sum(axis=-1)  # (B, n)
         std = torch.sqrt(torch.sum((fpts - avg[..., None]) ** 2 * spectrum, axis=-1))
-        spectrum = torch.stack([avg, std], axis=1)  # (B, 2, n)
+        skewness = torch.sum((fpts - avg[..., None]) ** 3 * spectrum, axis=-1) / std**3
+        spectrum = torch.stack([avg, std, skewness], axis=1)  # (B, 3, n)
 
         return spectrum
 

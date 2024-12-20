@@ -56,7 +56,7 @@ class ResNet18(torch.nn.Module):
     def __init__(self):
         super(ResNet18, self).__init__()
         self.conv1 = torch.nn.Conv1d(
-            2, 64, kernel_size=7, stride=2, padding=3, bias=False
+            3, 64, kernel_size=7, stride=2, padding=3, bias=False
         )
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.relu = torch.nn.ReLU(inplace=True)
