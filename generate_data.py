@@ -9,15 +9,17 @@ from scqubits import Fluxonium  # type: ignore
 from tqdm.auto import tqdm
 
 # parameters
-data_path = "data/dev.h5"
-num_per = 7
-EJb = (4.0, 6.0)
-ECb = (0.5, 1.0)
-ELb = (1.0, 2.0)
+data_path = "data/fluxonium_2.h5"
+num_per = 25
+EJb = (3.5, 6.5)
+ECb = (0.3, 1.5)
+ELb = (0.7, 2.5)
 
-level_num = 5
+DRY_RUN = False
+
+level_num = 10
 cutoff = 50
-flxs = np.linspace(0.0, 1.0, 240)
+flxs = np.linspace(0.0, 0.5, 120)
 
 
 def calculate_spectrum(flxs, EJ, EC, EL, evals_count=4, cutoff=50):
@@ -40,55 +42,80 @@ params = []
 energies = []
 print("Calculating on EC-EL plane")
 ECEL_num = 0
-for EC in tqdm(np.linspace(*ECb, num_per)):
-    for EL in tqdm(np.linspace(*ELb, num_per)):
-        energy = calculate_spectrum(flxs, EJb[0], EC, EL, level_num, cutoff)
+for EC in tqdm(np.linspace(ECb[0] + 1e-3, ECb[1], num_per + 1)):
+    EL_num = 0
+    for EL in tqdm(np.linspace(ELb[0] + 1e-3, ELb[1], num_per + 1)):
+        if DRY_RUN:
+            energy = np.random.randn(len(flxs), level_num)
+        else:
+            energy = calculate_spectrum(flxs, EJb[1], EC, EL, level_num, cutoff)
 
         # since energy is proportional to EJ, we can just use the energy
-        for EJ in np.linspace(EJb[0] + 0.01, EJb[1], num_per):
-            ratio = EJ / EJb[0]
+        for EJ in np.linspace(EJb[0] + 1e-3, EJb[1], num_per + 1):
+            ratio = EJ / EJb[1]
             tEC = EC * ratio
             tEL = EL * ratio
 
             if ECb[0] <= tEC <= ECb[1] and ELb[0] <= tEL <= ELb[1]:
-                ECEL_num += 1
+                EL_num += 1
                 params.append((EJ, tEC, tEL))
                 energies.append(energy * ratio)
+    print("EL line data points:", EL_num)
+    ECEL_num += EL_num
 print("EC-EL plane data points:", ECEL_num)
 
 print("Calculating on EJ-EL plane")
 EJEL_num = 0
-for EJ in tqdm(np.linspace(*EJb, num_per)):
-    for EL in tqdm(np.linspace(*ECb, num_per)):
-        energy = calculate_spectrum(flxs, EJ, ECb[0], EL, level_num, cutoff)
+for EJ in tqdm(np.linspace(EJb[0] + 1e-3, EJb[1], num_per + 1)):
+    EL_num = 0
+    for EL in tqdm(np.linspace(ELb[0] + 1e-3, ELb[1], num_per + 1)):
+        if DRY_RUN:
+            energy = np.random.randn(len(flxs), level_num)
+        else:
+            energy = calculate_spectrum(flxs, EJ, ECb[1], EL, level_num, cutoff)
 
-        for EC in np.linspace(ECb[0] + 0.01, ECb[1], num_per):
-            ratio = EC / ECb[0]
+        for EC in np.linspace(ECb[0] + 1e-3, ECb[1], num_per + 1):
+            ratio = EC / ECb[1]
             tEJ = EJ * ratio
             tEL = EL * ratio
             if EJb[0] <= tEJ <= EJb[1] and ELb[0] <= tEL <= ELb[1]:
-                EJEL_num += 1
+                EL_num += 1
                 params.append((tEJ, EC, tEL))
                 energies.append(energy * ratio)
+    print("EL line data points:", EL_num)
+    EJEL_num += EL_num
 print("EJ-EL plane data points:", EJEL_num)
 
 print("Calculating on EJ-EC plane")
 EJEC_num = 0
-for EJ in tqdm(np.linspace(*EJb, num_per)):
-    for EC in tqdm(np.linspace(*ECb, num_per)):
-        energy = calculate_spectrum(flxs, EJ, EC, ELb[0], level_num, cutoff)
+for EJ in tqdm(np.linspace(EJb[0] + 1e-3, EJb[1], num_per + 1)):
+    EC_num = 0
+    for EC in tqdm(np.linspace(ECb[0] + 1e-3, ECb[1], num_per + 1)):
+        if DRY_RUN:
+            energy = np.random.randn(len(flxs), level_num)
+        else:
+            energy = calculate_spectrum(flxs, EJ, EC, ELb[1], level_num, cutoff)
 
-        for EL in np.linspace(ELb[0] + 0.01, ELb[1], num_per):
-            ratio = EL / ELb[0]
+        for EL in np.linspace(ELb[0] + 1e-3, ELb[1], num_per + 1):
+            ratio = EL / ELb[1]
             tEJ = EJ * ratio
             tEC = EC * ratio
             if EJb[0] <= tEJ <= EJb[1] and ECb[0] <= tEC <= ECb[1]:
-                EJEC_num += 1
+                EC_num += 1
                 params.append((tEJ, tEC, EL))
                 energies.append(energy * ratio)
+    print("EC line data points:", EC_num)
+    EJEC_num += EC_num
 print("EJ-EC plane data points:", EJEC_num)
 
 print("Total data points:", len(params))
+
+# we can flip the data around 0.5 to make the other half
+# since the fluxonium is symmetric
+flxs = np.concatenate([flxs, 1.0 - flxs[::-1]])
+for i in range(len(params)):
+    energies[i] = np.concatenate([energies[i], energies[i][::-1]])
+
 params = np.array(params)
 energies = np.array(energies)
 
