@@ -56,11 +56,11 @@ class ResNet18(torch.nn.Module):
     def __init__(self):
         super(ResNet18, self).__init__()
         self.conv1 = torch.nn.Conv1d(
-            3, 64, kernel_size=7, stride=2, padding=3, bias=False
+            1, 64, kernel_size=7, stride=2, padding=3, bias=False
         )
         self.bn1 = torch.nn.BatchNorm1d(64)
         self.relu = torch.nn.ReLU(inplace=True)
-        self.layer1 = self._make_layer(64, 64, 2)
+        self.layer1 = self._make_layer(64, 64, 2, stride=2)
         self.layer2 = self._make_layer(64, 128, 2, stride=2)
         self.layer3 = self._make_layer(128, 256, 2, stride=2)
         self.layer4 = self._make_layer(256, 512, 2, stride=2)
@@ -82,7 +82,7 @@ class ResNet18(torch.nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
 
-        x = self.layer1(x)
+        # x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
