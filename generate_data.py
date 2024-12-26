@@ -9,11 +9,14 @@ from scqubits import Fluxonium  # type: ignore
 from tqdm.auto import tqdm
 
 # parameters
-data_path = "data/fluxonium_2.h5"
+data_path = "database/fluxonium_2.h5"
 num_per = 25
-EJb = (3.5, 6.5)
-ECb = (0.3, 1.5)
-ELb = (0.7, 2.5)
+# EJb = (1.0, 3.0)
+# ECb = (0.5, 2.5)
+# ELb = (0.1, 0.5)
+EJb = (3.0, 6.5)
+ECb = (0.3, 2.0)
+ELb = (0.5, 3.5)
 
 DRY_RUN = False
 
@@ -31,82 +34,68 @@ def calculate_spectrum(flxs, EJ, EC, EL, evals_count=4, cutoff=50):
     return spectrumData.energy_table
 
 
-def dump_data(filepath, flxs, params, energies):
+def dump_data(filepath, flxs, params, energies, Ebounds):
     with h5.File(filepath, "w") as f:
+        f.create_dataset("Ebounds", data=Ebounds)
         f.create_dataset("flxs", data=flxs)
         f.create_dataset("params", data=params)
         f.create_dataset("energies", data=energies)
 
 
+EJc = (EJb[0] + EJb[1]) / 2
+ECc = (ECb[0] + ECb[1]) / 2
+ELc = (ELb[0] + ELb[1]) / 2
+
 params = []
 energies = []
 print("Calculating on EC-EL plane")
-ECEL_num = 0
-for EC in tqdm(np.linspace(ECb[0] + 1e-3, ECb[1], num_per + 1)):
-    EL_num = 0
-    for EL in tqdm(np.linspace(ELb[0] + 1e-3, ELb[1], num_per + 1)):
+for EC in tqdm(np.linspace(ECb[0], ECb[1], num_per + 1)):
+    for EL in tqdm(np.linspace(ELb[0], ELb[1], num_per + 1)):
         if DRY_RUN:
             energy = np.random.randn(len(flxs), level_num)
         else:
-            energy = calculate_spectrum(flxs, EJb[1], EC, EL, level_num, cutoff)
+            energy = calculate_spectrum(flxs, EJc, EC, EL, level_num, cutoff)
 
         # since energy is proportional to EJ, we can just use the energy
-        for EJ in np.linspace(EJb[0] + 1e-3, EJb[1], num_per + 1):
-            ratio = EJ / EJb[1]
+        for EJ in np.linspace(EJb[0], EJb[1], num_per + 1):
+            ratio = EJ / EJc
             tEC = EC * ratio
             tEL = EL * ratio
 
-            if ECb[0] <= tEC <= ECb[1] and ELb[0] <= tEL <= ELb[1]:
-                EL_num += 1
-                params.append((EJ, tEC, tEL))
-                energies.append(energy * ratio)
-    print("EL line data points:", EL_num)
-    ECEL_num += EL_num
-print("EC-EL plane data points:", ECEL_num)
+            params.append((EJ, tEC, tEL))
+            energies.append(energy * ratio)
 
 print("Calculating on EJ-EL plane")
-EJEL_num = 0
-for EJ in tqdm(np.linspace(EJb[0] + 1e-3, EJb[1], num_per + 1)):
-    EL_num = 0
-    for EL in tqdm(np.linspace(ELb[0] + 1e-3, ELb[1], num_per + 1)):
+for EJ in tqdm(np.linspace(EJb[0], EJb[1], num_per + 1)):
+    for EL in tqdm(np.linspace(ELb[0], ELb[1], num_per + 1)):
         if DRY_RUN:
             energy = np.random.randn(len(flxs), level_num)
         else:
-            energy = calculate_spectrum(flxs, EJ, ECb[1], EL, level_num, cutoff)
+            energy = calculate_spectrum(flxs, EJ, ECc, EL, level_num, cutoff)
 
-        for EC in np.linspace(ECb[0] + 1e-3, ECb[1], num_per + 1):
-            ratio = EC / ECb[1]
+        for EC in np.linspace(ECb[0], ECb[1], num_per + 1):
+            ratio = EC / ECc
             tEJ = EJ * ratio
             tEL = EL * ratio
-            if EJb[0] <= tEJ <= EJb[1] and ELb[0] <= tEL <= ELb[1]:
-                EL_num += 1
-                params.append((tEJ, EC, tEL))
-                energies.append(energy * ratio)
-    print("EL line data points:", EL_num)
-    EJEL_num += EL_num
-print("EJ-EL plane data points:", EJEL_num)
+
+            params.append((tEJ, EC, tEL))
+            energies.append(energy * ratio)
 
 print("Calculating on EJ-EC plane")
-EJEC_num = 0
-for EJ in tqdm(np.linspace(EJb[0] + 1e-3, EJb[1], num_per + 1)):
-    EC_num = 0
-    for EC in tqdm(np.linspace(ECb[0] + 1e-3, ECb[1], num_per + 1)):
+for EJ in tqdm(np.linspace(EJb[0], EJb[1], num_per + 1)):
+    for EC in tqdm(np.linspace(ECb[0], ECb[1], num_per + 1)):
         if DRY_RUN:
             energy = np.random.randn(len(flxs), level_num)
         else:
-            energy = calculate_spectrum(flxs, EJ, EC, ELb[1], level_num, cutoff)
+            energy = calculate_spectrum(flxs, EJ, EC, ELc, level_num, cutoff)
 
-        for EL in np.linspace(ELb[0] + 1e-3, ELb[1], num_per + 1):
-            ratio = EL / ELb[1]
+        for EL in np.linspace(ELb[0], ELb[1], num_per + 1):
+            ratio = EL / ELc
             tEJ = EJ * ratio
             tEC = EC * ratio
-            if EJb[0] <= tEJ <= EJb[1] and ECb[0] <= tEC <= ECb[1]:
-                EC_num += 1
-                params.append((tEJ, tEC, EL))
-                energies.append(energy * ratio)
-    print("EC line data points:", EC_num)
-    EJEC_num += EC_num
-print("EJ-EC plane data points:", EJEC_num)
+
+            params.append((tEJ, tEC, EL))
+            energies.append(energy * ratio)
 
 print("Total data points:", len(params))
 
@@ -118,6 +107,7 @@ for i in range(len(params)):
 
 params = np.array(params)
 energies = np.array(energies)
+Ebounds = np.array((EJb, ECb, ELb))
 
 os.makedirs(os.path.dirname(data_path), exist_ok=True)
-dump_data(data_path, flxs, params, energies)
+dump_data(data_path, flxs, params, energies, Ebounds)
